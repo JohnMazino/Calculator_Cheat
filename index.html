@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Калькулятор</title>
   <script src="https://cdn.jsdelivr.net/npm/react@18.2.0/umd/react.production.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
@@ -14,85 +14,6 @@
       background-color: #000;
       font-family: 'Arial', sans-serif;
       overflow: hidden;
-      height: 100vh;
-      width: 100vw;
-    }
-    .calculator {
-      background-color: #1c2526;
-      padding: 20px;
-      width: 100vw;
-      height: 100vh;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-    }
-    .display {
-      background-color: #000;
-      padding: 20px;
-      text-align: right;
-      color: #fff;
-      font-size: 40px;
-      height: 120px;
-      display: flex;
-      flex-direction: column;
-      align-items: flex-end;
-      justify-content: space-between;
-      position: relative;
-    }
-    .blinking-cursor::after {
-      content: "";
-      width: 2px;
-      height: 48px;
-      background: #00c853;
-      display: inline-block;
-      animation: cursor-blink 1s steps(2) infinite;
-      position: absolute;
-      right: 10px;
-    }
-    @keyframes cursor-blink {
-      0% { opacity: 0; }
-    }
-    .button {
-      width: 80px;
-      height: 80px;
-      border-radius: 50%;
-      background-color: #31363b;
-      margin: 8px;
-      font-size: 32px;
-      border: 0;
-      cursor: pointer;
-      color: #fff;
-      transition: background-color 0.2s;
-    }
-    .button:hover { background-color: #40464a; }
-    .button:active { background-color: #2d3336; }
-    .clear { color: #f44336; }
-    .operator { color: #00c853; }
-    .equals { background-color: #00c853; color: #fff; }
-    .special-button {
-      width: 80px;
-      height: 80px;
-      border-radius: 50%;
-      background-color: #31363b;
-      margin: 8px;
-      font-size: 32px;
-      border: 0;
-      cursor: pointer;
-      color: #00c853;
-      transition: background-color 0.2s;
-    }
-    .special-button:hover { background-color: #40464a; }
-    .special-button:active { background-color: #2d3336; }
-    .lock-button-locked {
-      color: #f44336;
-    }
-    .cheat-sheet {
-      background-color: #1c2526;
-      padding: 20px;
-      width: 100vw;
-      height: 100vh;
-      color: #fff;
-      overflow-y: auto;
     }
     .swipe-container {
       width: 100vw;
@@ -104,14 +25,78 @@
       display: flex;
       width: 200%;
       height: 100%;
-      transition: transform 0.15s ease-out;
+      transition: transform 0.2s ease;
     }
     .swipe-page {
       width: 50%;
       height: 100%;
       display: flex;
       justify-content: center;
-      align-items: flex-start;
+      align-items: center;
+    }
+    .calculator {
+      background-color: #1c2526;
+      padding: 10px;
+      border-radius: 10px;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+    .display {
+      background-color: #000;
+      padding: 10px;
+      text-align: right;
+      border-radius: 5px;
+      color: #fff;
+      font-size: 30px;
+      height: 80px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      justify-content: space-between;
+      position: relative;
+    }
+    .blinking-cursor::after {
+      content: "";
+      width: 2px;
+      height: 40px;
+      background: #00c853;
+      display: inline-block;
+      animation: cursor-blink 1s steps(2) infinite;
+      position: absolute;
+      right: 5px;
+    }
+    @keyframes cursor-blink {
+      0% { opacity: 0; }
+    }
+    .button {
+      width: 100%;
+      height: 70px;
+      border-radius: 50%;
+      background-color: #31363b;
+      font-size: 28px;
+      border: 0;
+      cursor: pointer;
+      color: #fff;
+      transition: background-color 0.2s;
+    }
+    .button:hover { background-color: #40464a; }
+    .button:active { background-color: #2d3336; }
+    .clear { color: #f44336; }
+    .operator { color: #00c853; }
+    .equals { background-color: #00c853; color: #fff; }
+    .lock-button-locked {
+      color: #f44336;
+    }
+    .cheat-sheet {
+      background-color: #1c2526;
+      padding: 20px;
+      border-radius: 10px;
+      width: 100%;
+      height: 100%;
+      color: #fff;
+      overflow-y: auto;
     }
   </style>
 </head>
@@ -238,18 +223,20 @@
               <div className="calculator">
                 <div className="display">
                   <div className="blinking-cursor">{calculation || '0'}</div>
-                  <div className="text-xl text-gray-400">{previewResult}</div>
+                  <div className="text-lg text-gray-400">{previewResult}</div>
                 </div>
-                <div className="special-btns flex justify-between px-4 mb-4">
+                <div className="grid grid-cols-4 gap-2 mb-2">
                   <button
-                    className={`special-button ${isLocked ? 'lock-button-locked' : ''}`}
+                    className={`button ${isLocked ? 'lock-button-locked' : ''}`}
                     onClick={toggleLock}
                   >
                     {isLocked ? '🔒' : '🔓'}
                   </button>
-                  <button className="special-button" onClick={handleBackspace}>⌫</button>
+                  <div></div>
+                  <div></div>
+                  <button className="button" onClick={handleBackspace}>⌫</button>
                 </div>
-                <div className="btn-grid grid grid-cols-4 gap-2 px-4 flex-grow items-center">
+                <div className="grid grid-cols-4 gap-2">
                   {buttons.flat().map((btn) => (
                     <button
                       key={btn}
