@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Калькулятор</title>
+  <script src="https://cdn.jsdelivr.net/npm/react@18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.22.9/babel.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      margin: 0;
+      background-color: #000;
+      font-family: 'Arial', sans-serif;
+      overflow: hidden;
+    }
+    .calculator {
+      background-color: #1c2526;
+      padding: 10px;
+      border-radius: 10px;
+      width: 100%;
+      max-width: 320px;
+      margin: 20px auto;
+    }
+    .display {
+      background-color: #000;
+      padding: 10px;
+      text-align: right;
+      border-radius: 5px;
+      margin-bottom: 10px;
+      color: #fff;
+      font-size: 30px;
+      height: 80px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      justify-content: space-between;
+      position: relative;
+    }
+    .blinking-cursor::after {
+      content: "";
+      width: 2px;
+      height: 40px;
+      background: #00c853;
+      display: inline-block;
+      animation: cursor-blink 1s steps(2) infinite;
+      position: absolute;
+      right: 5px;
+    }
+    @keyframes cursor-blink {
+      0% { opacity: 0; }
+    }
+    .button {
+      width: 70px;
+      height: 70px;
+      border-radius: 50%;
+      background-color: #31363b;
+      margin: 5px;
+      font-size: 28px;
+      border: 0;
+      cursor: pointer;
+      color: #fff;
+      transition: background-color 0.2s;
+    }
+    .button:hover { background-color: #40464a; }
+    .button:active { background-color: #2d3336; }
+    .clear { color: #f44336; }
+    .operator { color: #00c853; }
+    .equals { background-color: #00c853; color: #fff; }
+    .special-button {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      background-color: #31363b;
+      font-size: 20px;
+      border: 0;
+      cursor: pointer;
+      color: #00c853;
+      transition: background-color 0.2s;
+    }
+    .special-button:hover { background-color: #40464a; }
+    .special-button:active { background-color: #2d3336; }
+    .lock-button-locked {
+      color: #f44336;
+    }
+    .cheat-sheet {
+      background-color: #1c2526;
+      padding: 20px;
+      border-radius: 10px;
+      width: 100%;
+      max-width: 320px;
+      margin: 20px auto;
+      color: #fff;
+      height: calc(100vh - 40px);
+      overflow-y: auto;
+    }
+    .swipe-container {
+      width: 100%;
+      height: 100vh;
+      overflow-x: hidden;
+      position: relative;
+    }
+    .swipe-content {
+      display: flex;
+      width: 200%;
+      height: 100%;
+      transition: transform 0.3s ease;
+    }
+    .swipe-page {
+      width: 50%;
+      height: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+
+    const CheatSheet = () => {
+      return (
+        <div className="cheat-sheet">
+          <h2 className="text-2xl mb-4">Шпоры</h2>
+          <div className="space-y-4">
+            <div>
+              <h3 className="text-lg font-bold">Билет 1</h3>
+              <p>Ответ: Lorem ipsum dolor sit amet...</p>
+            </div>
+            <div>
+              <h3 className="text-lg font-bold">Билет 2</h3>
+              <p>Ответ: Consectetur adipiscing elit...</p>
+            </div>
+            {/* Добавьте больше билетов по необходимости */}
+          </div>
+        </div>
+      );
+    };
+
+    const Calculator = () => {
+      const [calculation, setCalculation] = useState(localStorage.getItem('calculation') || '');
+      const [previewResult, setPreviewResult] = useState('');
+      const [isLocked, setIsLocked] = useState(true);
+      const [currentPage, setCurrentPage] = useState(0);
+      const [touchStart, setTouchStart] = useState(null);
+      const [touchEnd, setTouchEnd] = useState(null);
+
+      useEffect(() => {
+        localStorage.setItem('calculation', calculation);
+        try {
+          const calcResult = eval(calculation.replace('×', '*').replace('÷', '/'));
+          if (!isNaN(calcResult) && isFinite(calcResult)) {
+            setPreviewResult(`= ${calcResult}`);
+          } else {
+            setPreviewResult('');
+          }
+        } catch {
+          setPreviewResult('');
+        }
+      }, [calculation]);
+
+      const updateCalculation = (value) => {
+        if (calculation.length < 12) {
+          setCalculation(calculation + value);
+        }
+      };
+
+      const handleEquals = () => {
+        try {
+          const calcResult = eval(calculation.replace('×', '*').replace('÷', '/'));
+          setCalculation(calcResult.toString());
+          setPreviewResult('');
+          localStorage.setItem('calculation', calcResult.toString());
+        } catch {
+          setPreviewResult('Ошибка');
+        }
+      };
+
+      const handleBackspace = () => {
+        setCalculation(calculation.slice(0, -1));
+      };
+
+      const clearAll = () => {
+        setCalculation('');
+        setPreviewResult('');
+        localStorage.clear();
+      };
+
+      const toggleLock = () => {
+        setIsLocked(!isLocked);
+      };
+
+      const handleTouchStart = (e) => {
+        if (!isLocked) {
+          setTouchStart(e.targetTouches[0].clientX);
+        }
+      };
+
+      const handleTouchMove = (e) => {
+        if (!isLocked) {
+          setTouchEnd(e.targetTouches[0].clientX);
+        }
+      };
+
+      const handleTouchEnd = () => {
+        if (!isLocked && touchStart && touchEnd) {
+          const diff = touchStart - touchEnd;
+          if (Math.abs(diff) > 50) {
+            if (diff > 0 && currentPage === 0) {
+              setCurrentPage(1);
+            } else if (diff < 0 && currentPage === 1) {
+              setCurrentPage(0);
+            }
+          }
+        }
+        setTouchStart(null);
+        setTouchEnd(null);
+      };
+
+      const buttons = [
+        ['C', '()', '%', '÷'],
+        ['7', '8', '9', '×'],
+        ['4', '5', '6', '-'],
+        ['1', '2', '3', '+'],
+        ['±', '0', ',', '=']
+      ];
+
+      return (
+        <div
+          className="swipe-container"
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+        >
+          <div className="swipe-content" style={{ transform: `translateX(-${currentPage * 50}%)` }}>
+            <div className="swipe-page">
+              <div className="calculator">
+                <div className="display">
+                  <div className="blinking-cursor">{calculation || '0'}</div>
+                  <div className="text-lg text-gray-400">{previewResult}</div>
+                </div>
+                <div className="special-btns flex justify-between mb-2">
+                  <button
+                    className={`special-button ${isLocked ? 'lock-button-locked' : ''}`}
+                    onClick={toggleLock}
+                  >
+                    {isLocked ? '🔒' : '🔓'}
+                  </button>
+                  <button className="special-button" onClick={handleBackspace}>⌫</button>
+                </div>
+                <div className="btn-grid grid grid-cols-4 gap-2">
+                  {buttons.flat().map((btn) => (
+                    <button
+                      key={btn}
+                      onClick={() => {
+                        if (btn === 'C') clearAll();
+                        else if (btn === '()') updateCalculation(calculation.includes('(') && !calculation.includes(')') ? ')' : '(');
+                        else if (btn === '%') {
+                          try {
+                            const newCalc = eval(calculation.replace('×', '*').replace('÷', '/')) / 100;
+                            setCalculation(newCalc.toString());
+                            setPreviewResult('');
+                          } catch {
+                            setPreviewResult('Ошибка');
+                          }
+                        } else if (btn === '±') {
+                          try {
+                            const newCalc = eval(calculation.replace('×', '*').replace('÷', '/')) * -1;
+                            setCalculation(newCalc.toString());
+                            setPreviewResult('');
+                          } catch {
+                            setPreviewResult('Ошибка');
+                          }
+                        } else if (btn === '=') handleEquals();
+                        else updateCalculation(btn);
+                      }}
+                      className={`button ${btn === 'C' ? 'clear' : ['÷', '×', '-', '+', '='].includes(btn) ? 'operator' : btn === '=' ? 'equals' : ''}`}
+                    >
+                      {btn}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div className="swipe-page">
+              <CheatSheet />
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<Calculator />);
+  </script>
+</body>
+</html>
