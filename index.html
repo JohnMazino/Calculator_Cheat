@@ -9,8 +9,10 @@
   <script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.22.9/babel.min.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    body {
+    html, body {
       margin: 0;
+      padding: 0;
+      height: 100%;
       background-color: #000;
       font-family: 'Arial', sans-serif;
       overflow: hidden;
@@ -18,20 +20,19 @@
     .calculator {
       background-color: #1c2526;
       padding: 10px;
-      border-radius: 10px;
       width: 100%;
-      max-width: 320px;
-      margin: 20px auto;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
     }
     .display {
       background-color: #000;
-      padding: 10px;
+      padding: 20px;
       text-align: right;
-      border-radius: 5px;
-      margin-bottom: 10px;
       color: #fff;
-      font-size: 30px;
-      height: 80px;
+      font-size: 40px;
+      flex-grow: 0.5;
       display: flex;
       flex-direction: column;
       align-items: flex-end;
@@ -52,11 +53,10 @@
       0% { opacity: 0; }
     }
     .button {
-      width: 70px;
-      height: 70px;
+      width: 100%;
+      height: 100%;
       border-radius: 50%;
       background-color: #31363b;
-      margin: 5px;
       font-size: 28px;
       border: 0;
       cursor: pointer;
@@ -68,31 +68,15 @@
     .clear { color: #f44336; }
     .operator { color: #00c853; }
     .equals { background-color: #00c853; color: #fff; }
-    .special-button {
-      width: 50px;
-      height: 50px;
-      border-radius: 50%;
-      background-color: #31363b;
-      font-size: 20px;
-      border: 0;
-      cursor: pointer;
-      color: #00c853;
-      transition: background-color 0.2s;
-    }
-    .special-button:hover { background-color: #40464a; }
-    .special-button:active { background-color: #2d3336; }
     .lock-button-locked {
       color: #f44336;
     }
     .cheat-sheet {
       background-color: #1c2526;
       padding: 20px;
-      border-radius: 10px;
       width: 100%;
-      max-width: 320px;
-      margin: 20px auto;
+      height: 100%;
       color: #fff;
-      height: calc(100vh - 40px);
       overflow-y: auto;
     }
     .swipe-container {
@@ -114,6 +98,20 @@
       justify-content: center;
       align-items: flex-start;
     }
+    .special-btns {
+      display: grid;
+      grid-template-columns: 1fr 3fr 1fr;
+      gap: 10px;
+      padding: 0 10px;
+      margin-bottom: 10px;
+    }
+    .btn-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      padding: 0 10px;
+      flex-grow: 1;
+    }
   </style>
 </head>
 <body>
@@ -134,7 +132,6 @@
               <h3 className="text-lg font-bold">Билет 2</h3>
               <p>Ответ: Consectetur adipiscing elit...</p>
             </div>
-            {/* Добавьте больше билетов по необходимости */}
           </div>
         </div>
       );
@@ -242,16 +239,17 @@
                   <div className="blinking-cursor">{calculation || '0'}</div>
                   <div className="text-lg text-gray-400">{previewResult}</div>
                 </div>
-                <div className="special-btns flex justify-between mb-2">
+                <div className="special-btns">
                   <button
-                    className={`special-button ${isLocked ? 'lock-button-locked' : ''}`}
+                    className={`button ${isLocked ? 'lock-button-locked' : ''}`}
                     onClick={toggleLock}
                   >
                     {isLocked ? '🔒' : '🔓'}
                   </button>
-                  <button className="special-button" onClick={handleBackspace}>⌫</button>
+                  <div></div>
+                  <button className="button" onClick={handleBackspace}>⌫</button>
                 </div>
-                <div className="btn-grid grid grid-cols-4 gap-2">
+                <div className="btn-grid">
                   {buttons.flat().map((btn) => (
                     <button
                       key={btn}
