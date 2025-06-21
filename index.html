@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Калькулятор</title>
   <script src="https://cdn.jsdelivr.net/npm/react@18.2.0/umd/react.production.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
@@ -14,27 +14,25 @@
       background-color: #000;
       font-family: 'Arial', sans-serif;
       overflow: hidden;
+      height: 100vh;
+      width: 100vw;
     }
     .calculator {
       background-color: #1c2526;
-      padding: 10px;
-      border-radius: 10px;
-      width: 100%;
-      max-width: 320px;
-      margin: 0 auto;
-      height: 100%;
+      padding: 20px;
+      width: 100vw;
+      height: 100vh;
       display: flex;
       flex-direction: column;
+      justify-content: space-between;
     }
     .display {
       background-color: #000;
-      padding: 10px;
+      padding: 20px;
       text-align: right;
-      border-radius: 5px;
-      margin-bottom: 10px;
       color: #fff;
-      font-size: 30px;
-      height: 80px;
+      font-size: 40px;
+      height: 120px;
       display: flex;
       flex-direction: column;
       align-items: flex-end;
@@ -44,23 +42,23 @@
     .blinking-cursor::after {
       content: "";
       width: 2px;
-      height: 40px;
+      height: 48px;
       background: #00c853;
       display: inline-block;
       animation: cursor-blink 1s steps(2) infinite;
       position: absolute;
-      right: 5px;
+      right: 10px;
     }
     @keyframes cursor-blink {
       0% { opacity: 0; }
     }
     .button {
-      width: 70px;
-      height: 70px;
+      width: 80px;
+      height: 80px;
       border-radius: 50%;
       background-color: #31363b;
-      margin: 5px;
-      font-size: 28px;
+      margin: 8px;
+      font-size: 32px;
       border: 0;
       cursor: pointer;
       color: #fff;
@@ -72,11 +70,12 @@
     .operator { color: #00c853; }
     .equals { background-color: #00c853; color: #fff; }
     .special-button {
-      width: 70px;
-      height: 70px;
+      width: 80px;
+      height: 80px;
       border-radius: 50%;
       background-color: #31363b;
-      font-size: 28px;
+      margin: 8px;
+      font-size: 32px;
       border: 0;
       cursor: pointer;
       color: #00c853;
@@ -90,16 +89,13 @@
     .cheat-sheet {
       background-color: #1c2526;
       padding: 20px;
-      border-radius: 10px;
-      width: 100%;
-      max-width: 320px;
-      margin: 0 auto;
+      width: 100vw;
+      height: 100vh;
       color: #fff;
-      height: 100%;
       overflow-y: auto;
     }
     .swipe-container {
-      width: 100%;
+      width: 100vw;
       height: 100vh;
       overflow-x: hidden;
       position: relative;
@@ -108,14 +104,14 @@
       display: flex;
       width: 200%;
       height: 100%;
-      transition: transform 0.2s ease;
+      transition: transform 0.15s ease-out;
     }
     .swipe-page {
       width: 50%;
       height: 100%;
       display: flex;
       justify-content: center;
-      align-items: center;
+      align-items: flex-start;
     }
   </style>
 </head>
@@ -242,9 +238,9 @@
               <div className="calculator">
                 <div className="display">
                   <div className="blinking-cursor">{calculation || '0'}</div>
-                  <div className="text-lg text-gray-400">{previewResult}</div>
+                  <div className="text-xl text-gray-400">{previewResult}</div>
                 </div>
-                <div className="special-btns flex justify-between mb-2">
+                <div className="special-btns flex justify-between px-4 mb-4">
                   <button
                     className={`special-button ${isLocked ? 'lock-button-locked' : ''}`}
                     onClick={toggleLock}
@@ -253,7 +249,7 @@
                   </button>
                   <button className="special-button" onClick={handleBackspace}>⌫</button>
                 </div>
-                <div className="btn-grid grid grid-cols-4 gap-2">
+                <div className="btn-grid grid grid-cols-4 gap-2 px-4 flex-grow items-center">
                   {buttons.flat().map((btn) => (
                     <button
                       key={btn}
