@@ -123,12 +123,16 @@
       flex-grow: 1;
       overflow-y: auto;
       margin-top: 10px;
-      touch-action: pan-y;
+      touch-action: pan-x pan-y;
+    }
+    .pdf-page {
+      overflow-x: auto;
+      width: 100%;
+      margin-bottom: 10px;
     }
     .pdf-canvas {
-      width: 100%;
       border: none;
-      margin-bottom: 10px;
+      display: block;
     }
     .error-message {
       color: #ff4d4d;
@@ -165,10 +169,13 @@
             const renderPage = async (pageNum) => {
               const page = await pdf.getPage(pageNum);
               const viewport = page.getViewport({ scale: 1 });
+              const pageContainer = document.createElement('div');
+              pageContainer.className = 'pdf-page';
+              pageContainer.dataset.page = pageNum;
               const canvas = document.createElement('canvas');
               canvas.className = 'pdf-canvas';
-              canvas.dataset.page = pageNum;
-              container.appendChild(canvas);
+              pageContainer.appendChild(canvas);
+              container.appendChild(pageContainer);
 
               const context = canvas.getContext('2d');
               const baseScale = container.offsetWidth / viewport.width * 1.5; // Initial zoom 1.5x
@@ -184,6 +191,9 @@
                 canvasContext: context,
                 viewport: scaledViewport
               }).promise;
+
+              // Update page container width to allow horizontal scrolling
+              pageContainer.style.width = `${container.offsetWidth}px`;
             };
 
             // Lazy load: render first two pages initially
@@ -200,11 +210,14 @@
                     await renderPage(pageNum);
                     observer.unobserve(entry.target);
                     if (pageNum < pdf.numPages) {
+                      const nextPageContainer = document.createElement('div');
+                      nextPageContainer.className = 'pdf-page';
+                      nextPageContainer.dataset.page = pageNum + 1;
                       const nextCanvas = document.createElement('canvas');
                       nextCanvas.className = 'pdf-canvas';
-                      nextCanvas.dataset.page = pageNum + 1;
-                      container.appendChild(nextCanvas);
-                      observer.observe(nextCanvas);
+                      nextPageContainer.appendChild(nextCanvas);
+                      container.appendChild(nextPageContainer);
+                      observer.observe(nextPageContainer);
                     }
                   }
                 }
@@ -212,11 +225,14 @@
             }, { threshold: 0.1 });
 
             if (pdf.numPages > 2) {
+              const nextPageContainer = document.createElement('div');
+              nextPageContainer.className = 'pdf-page';
+              nextPageContainer.dataset.page = 3;
               const nextCanvas = document.createElement('canvas');
               nextCanvas.className = 'pdf-canvas';
-              nextCanvas.dataset.page = 3;
-              container.appendChild(nextCanvas);
-              observer.observe(nextCanvas);
+              nextPageContainer.appendChild(nextCanvas);
+              container.appendChild(nextPageContainer);
+              observer.observe(nextPageContainer);
             }
           } catch (error) {
             console.error('Error rendering PDF:', error);
@@ -227,12 +243,57 @@
         renderPDF();
       }, [view]);
 
+      const handleTouchStart = (e) => {
+        if (e.target.closest('.pdf-page')) {
+          // Allow touch events within pdf-page to handle scrolling
+          return;
+        }
+        onSwipeStart(e);
+      };
+
+      const handleTouchMove = (e) => {
+        if (e.target.closest('.pdf-page')) {
+          const pageContainer = e.target.closest('.pdf-page');
+          const scrollLeft = pageContainer.scrollLeft;
+          const scrollWidth = pageContainer.scrollWidth;
+          const clientWidth = pageContainer.clientWidth;
+          const touchX = e.targetTouches[0].clientX;
+
+          // Prevent app-level swipe if scrolling within PDF and not at edges
+          if (scrollLeft > 0 && scrollLeft < scrollWidth - clientWidth) {
+            return;
+          }
+          // Allow swipe only at edges
+          if ((scrollLeft === 0 && touchX < touchStart) || (scrollLeft >= scrollWidth - clientWidth && touchX > touchStart)) {
+            onSwipeMove(e);
+          }
+        } else {
+          onSwipeMove(e);
+        }
+      };
+
+      const handleTouchEnd = (e) => {
+        if (e.target.closest('.pdf-page')) {
+          const pageContainer = e.target.closest('.pdf-page');
+          const scrollLeft = pageContainer.scrollLeft;
+          const scrollWidth = pageContainer.scrollWidth;
+          const clientWidth = pageContainer.clientWidth;
+
+          // Trigger app-level swipe only if at scroll edges
+          if ((scrollLeft === 0 || scrollLeft >= scrollWidth - clientWidth) && touchStart && touchEnd) {
+            onSwipeEnd(e);
+          }
+        } else {
+          onSwipeEnd(e);
+        }
+      };
+
       return (
         <div
           className="cheat-sheet"
-          onTouchStart={onSwipeStart}
-          onTouchMove={onSwipeMove}
-          onTouchEnd={onSwipeEnd}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
         >
           <div className="flex justify-start gap-2 mb-2">
             <button
