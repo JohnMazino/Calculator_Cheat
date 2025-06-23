@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=3.0, user-scalable=yes">
   <title>Calculator</title>
   <script src="https://cdn.jsdelivr.net/npm/react@18.2.0/umd/react.production.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
@@ -105,7 +105,7 @@
       color: #fff;
       display: flex;
       flex-direction: column;
-      overflow-y: auto;
+      overflow: hidden;
     }
     .mini-button {
       padding: 5px 10px;
@@ -123,7 +123,8 @@
       flex-grow: 1;
       overflow-y: auto;
       margin-top: 10px;
-      touch-action: pan-y; /* Allows vertical scrolling while capturing horizontal swipes */
+      touch-action: pan-y pinch-zoom;
+      position: relative;
     }
     .pdf-canvas {
       width: 100%;
@@ -145,6 +146,10 @@
     const CheatSheet = ({ onSwipeStart, onSwipeMove, onSwipeEnd }) => {
       const [view, setView] = useState('teoria');
       const containerRef = useRef(null);
+      const pdfRef = useRef(null);
+      const [zoom, setZoom] = useState(1);
+      const [isPinching, setIsPinching] = useState(false);
+      const [initialDistance, setInitialDistance] = useState(null);
 
       useEffect(() => {
         const renderPDF = async () => {
@@ -157,10 +162,11 @@
 
           try {
             const pdf = await pdfjsLib.getDocument(view === 'teoria' ? 'teoria.pdf' : 'practika.pdf').promise;
+            pdfRef.current = pdf;
             const container = containerRef.current;
             container.innerHTML = ''; // Clear previous canvases
 
-            for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+            const renderPage = async (pageNum) => {
               const page = await pdf.getPage(pageNum);
               const viewport = page.getViewport({ scale: 1 });
               const canvas = document.createElement('canvas');
@@ -168,16 +174,52 @@
               container.appendChild(canvas);
 
               const context = canvas.getContext('2d');
-              const scale = Math.min(container.offsetWidth / viewport.width, 1);
+              const baseScale = Math.min(container.offsetWidth / viewport.width, 1);
+              const scale = baseScale * zoom * window.devicePixelRatio; // Higher quality with devicePixelRatio
               const scaledViewport = page.getViewport({ scale });
 
               canvas.width = scaledViewport.width;
               canvas.height = scaledViewport.height;
+              canvas.style.width = `${scaledViewport.width / window.devicePixelRatio}px`;
+              canvas.style.height = `${scaledViewport.height / window.devicePixelRatio}px`;
 
               await page.render({
                 canvasContext: context,
                 viewport: scaledViewport
               }).promise;
+            };
+
+            // Lazy load: render only the first few pages initially
+            for (let pageNum = 1; pageNum <= Math.min(pdf.numPages, 2); pageNum++) {
+              await renderPage(pageNum);
+            }
+
+            // Intersection Observer for lazy loading additional pages
+            const observer = new IntersectionObserver((entries) => {
+              entries.forEach(async (entry) => {
+                if (entry.isIntersecting) {
+                  const pageNum = parseInt(entry.target.dataset.page);
+                  if (pageNum <= pdf.numPages) {
+                    await renderPage(pageNum);
+                    observer.unobserve(entry.target);
+                    if (pageNum < pdf.numPages) {
+                      const nextCanvas = document.createElement('canvas');
+                      nextCanvas.className = 'pdf-canvas';
+                      nextCanvas.dataset.page = pageNum + 1;
+                      container.appendChild(nextCanvas);
+                      observer.observe(nextCanvas);
+                    }
+                  }
+                }
+              });
+            }, { threshold: 0.1 });
+
+            if (pdf.numPages > 2) {
+              const nextCanvas = document.createElement('canvas');
+              nextCanvas.className = 'pdf-canvas';
+              nextCanvas.dataset.page = 3;
+              container.appendChild(nextCanvas);
+              observer.observe(nextCanvas);
             }
           } catch (error) {
             console.error('Error rendering PDF:', error);
@@ -186,14 +228,46 @@
         };
 
         renderPDF();
-      }, [view]);
+      }, [view, zoom]);
+
+      const handleTouchStart = (e) => {
+        onSwipeStart(e);
+        if (e.touches.length === 2) {
+          setIsPinching(true);
+          const dx = e.touches[0].clientX - e.touches[1].clientX;
+          const dy = e.touches[0].clientY - e.touches[1].clientY;
+          setInitialDistance(Math.sqrt(dx * dx + dy * dy));
+        }
+      };
+
+      const handleTouchMove = (e) => {
+        if (isPinching && e.touches.length === 2) {
+          e.preventDefault();
+          const dx = e.touches[0].clientX - e.touches[1].clientX;
+          const dy = e.touches[0].clientY - e.touches[1].clientY;
+          const distance = Math.sqrt(dx * dx + dy * dy);
+          const newZoom = zoom * (distance / initialDistance);
+          setZoom(Math.min(Math.max(newZoom, 0.5), 3)); // Limit zoom between 0.5x and 3x
+          setInitialDistance(distance);
+        } else {
+          onSwipeMove(e);
+        }
+      };
+
+      const handleTouchEnd = (e) => {
+        if (isPinching) {
+          setIsPinching(false);
+          setInitialDistance(null);
+        }
+        onSwipeEnd(e);
+      };
 
       return (
         <div
           className="cheat-sheet"
-          onTouchStart={onSwipeStart}
-          onTouchMove={onSwipeMove}
-          onTouchEnd={onSwipeEnd}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
         >
           <div className="flex justify-start gap-2 mb-2">
             <button
@@ -268,20 +342,20 @@
       };
 
       const handleTouchStart = (e) => {
-        if (!isLocked) {
+        if (!isLocked && e.touches.length === 1) {
           setTouchStart(e.targetTouches[0].clientX);
         }
       };
 
       const handleTouchMove = (e) => {
-        if (!isLocked) {
+        if (!isLocked && e.touches.length === 1) {
           setTouchEnd(e.targetTouches[0].clientX);
-          e.preventDefault(); // Prevent vertical scrolling during horizontal swipe
+          e.preventDefault();
         }
       };
 
-      const handleTouchEnd = () => {
-        if (!isLocked && touchStart && touchEnd) {
+      const handleTouchEnd = (e) => {
+        if (!isLocked && touchStart && touchEnd && e.touches.length === 0) {
           const diff = touchStart - touchEnd;
           if (Math.abs(diff) > 30) {
             if (diff > 0 && currentPage === 0) {
