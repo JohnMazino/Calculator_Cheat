@@ -44,7 +44,6 @@
       height: 100%;
       display: flex;
       flex-direction: column;
-      justify-content: space-between;
     }
     .display {
       background-color: #000;
@@ -147,13 +146,14 @@
     .button-section {
       display: flex;
       flex-direction: column;
-      gap: 5px;
+      gap: 8px;
+      padding-top: 20vh; /* Push buttons below the middle */
     }
     .special-buttons {
-      margin-bottom: 5px;
+      margin-bottom: 8px; /* Slightly above main buttons */
     }
     .main-buttons {
-      margin-top: -10px; /* Move main buttons higher */
+      /* No negative margin, rely on padding-top for positioning */
     }
   </style>
 </head>
