@@ -8,8 +8,8 @@
   <script src="https://cdn.jsdelivr.net/npm/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.22.9/babel.min.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.7.76/pdf.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.7.76/pdf.worker.min.js"></script>
   <style>
     body {
       margin: 0;
@@ -44,6 +44,7 @@
       height: 100%;
       display: flex;
       flex-direction: column;
+      justify-content: space-between; /* Push content to top and bottom */
     }
     .display {
       background-color: #000;
@@ -143,8 +144,10 @@
       text-align: center;
       padding: 20px;
     }
-    .button-grid {
-      margin-top: 20px; /* Lower buttons */
+    .button-section {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
     }
   </style>
 </head>
@@ -197,8 +200,8 @@
               await page.render({
                 canvasContext: context,
                 viewport: scaledViewport
-              }).promise();
-
+              }); // Modern pdf.js API: render returns a promise directly
+              
               // Update page container width to allow horizontal scrolling
               pageContainer.style.width = `${container.offsetWidth}px`;
             };
@@ -476,57 +479,61 @@
           <div className="swipe-content" style={{ transform: `translateX(-${currentPage * 50}%)` }}>
             <div className="swipe-page">
               <div className="calculator">
-                <div className="display">
-                  <div className="blinking-cursor">{calculation || '0'}</div>
-                  <div className="text-lg text-gray-400">{previewResult}</div>
-                </div>
-                <div className="grid grid-cols-4 gap-2 mb-2">
-                  <button
-                    className="button invisible-lock"
-                    onClick={toggleLock}
-                  />
-                  <button
-                    className="button function-button"
-                    onClick={toggleFunctions}
-                  >
-                    fn
-                  </button>
-                  <div></div>
-                  <button className="button" onClick={handleBackspace}>⌫</button>
-                </div>
-                <div className="button-grid grid grid-cols-4 gap-2">
-                  {buttons.flat().map((btn) => (
+                <div>
+                  <div className="display">
+                    <div className="blinking-cursor">{calculation || '0'}</div>
+                    <div className="text-lg text-gray-400">{previewResult}</div>
+                  </div>
+                  <div className="grid grid-cols-4 gap-2 mb-2">
                     <button
-                      key={btn}
-                      onClick={() => {
-                        if (btn === 'C') clearAll();
-                        else if (btn === '()') updateCalculation(calculation.includes('(') && !calculation.includes(')') ? ')' : '(');
-                        else if (btn === '%') {
-                          try {
-                            const newCalc = eval(calculation.replace('×', '*').replace('÷', '/')) / 100;
-                            setCalculation(newCalc.toFixed(6).toString());
-                            setPreviewResult('');
-                            setPendingFunction(null);
-                          } catch {
-                            setPreviewResult('Ошибка');
-                          }
-                        } else if (btn === '±') {
-                          try {
-                            const newCalc = eval(calculation.replace('×', '*').replace('÷', '/')) * -1;
-                            setCalculation(newCalc.toFixed(6).toString());
-                            setPreviewResult('');
-                            setPendingFunction(null);
-                          } catch {
-                            setPreviewResult('Ошибка');
-                          }
-                        } else if (btn === '=') handleEquals();
-                        else updateCalculation(btn);
-                      }}
-                      className={`button ${btn === 'C' ? 'clear' : ['÷', '×', '-', '+', '=', 'sin', 'cos', 'arctg', '√'].includes(btn) ? 'operator' : btn === '=' ? 'equals' : ''}`}
+                      className="button function-button"
+                      onClick={toggleFunctions}
                     >
-                      {btn}
+                      fn
                     </button>
-                  ))}
+                    <button
+                      className="button invisible-lock"
+                      onClick={toggleLock}
+                    />
+                    <div></div>
+                    <button className="button" onClick={handleBackspace}>⌫</button>
+                  </div>
+                </div>
+                <div className="button-section">
+                  <div className="grid grid-cols-4 gap-2">
+                    {buttons.flat().map((btn) => (
+                      <button
+                        key={btn}
+                        onClick={() => {
+                          if (btn === 'C') clearAll();
+                          else if (btn === '()') updateCalculation(calculation.includes('(') && !calculation.includes(')') ? ')' : '(');
+                          else if (btn === '%') {
+                            try {
+                              const newCalc = eval(calculation.replace('×', '*').replace('÷', '/')) / 100;
+                              setCalculation(newCalc.toFixed(6).toString());
+                              setPreviewResult('');
+                              setPendingFunction(null);
+                            } catch {
+                              setPreviewResult('Ошибка');
+                            }
+                          } else if (btn === '±') {
+                            try {
+                              const newCalc = eval(calculation.replace('×', '*').replace('÷', '/')) * -1;
+                              setCalculation(newCalc.toFixed(6).toString());
+                              setPreviewResult('');
+                              setPendingFunction(null);
+                            } catch {
+                              setPreviewResult('Ошибка');
+                            }
+                          } else if (btn === '=') handleEquals();
+                          else updateCalculation(btn);
+                        }}
+                        className={`button ${btn === 'C' ? 'clear' : ['÷', '×', '-', '+', '=', 'sin', 'cos', 'arctg', '√'].includes(btn) ? 'operator' : btn === '=' ? 'equals' : ''}`}
+                      >
+                        {btn}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
