@@ -8,8 +8,8 @@
   <script src="https://cdn.jsdelivr.net/npm/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.22.9/babel.min.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@4.0.379/build/pdf.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@4.0.379/build/pdf.worker.min.js"></script>
+  <script src="https://unpkg.com/pdfjs-dist@2.14.305/build/pdf.min.js"></script>
+  <script src="https://unpkg.com/pdfjs-dist@2.14.305/build/pdf.worker.min.js"></script>
   <style>
     body {
       margin: 0;
@@ -147,10 +147,10 @@
     .button-section {
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 5px; /* Reduced gap to move main buttons higher */
     }
     .special-buttons {
-      margin-bottom: 5px; /* Slightly above main buttons */
+      margin-bottom: 5px; /* Keep special buttons slightly above main buttons */
     }
   </style>
 </head>
@@ -169,12 +169,12 @@
           const pdfjsLib = window.pdfjsLib;
           if (!pdfjsLib) {
             console.error('pdfjsLib is not loaded');
-            containerRef.current.innerHTML = '<p class="error-message">Не удалось загрузить библиотеку PDF. Проверьте подключение к интернету или файлы.</p>';
+            containerRef.current.innerHTML = '<p class="error-message">Не удалось загрузить библиотеку PDF. Проверьте подключение к интернету.</p>';
             return;
           }
 
           try {
-            const pdf = await pdfjsLib.getDocument(view === 'teoria' ? 'teoria.pdf' : 'practika.pdf').promise;
+            const pdf = await pdfjsLib.getDocument(view === 'teoria' ? './teoria.pdf' : './practika.pdf').promise;
             pdfRef.current = pdf;
             const container = containerRef.current;
             container.innerHTML = ''; // Clear previous canvases
@@ -200,10 +200,12 @@
               canvas.style.width = `${scaledViewport.width / window.devicePixelRatio}px`;
               canvas.style.height = `${scaledViewport.height / window.devicePixelRatio}px`;
 
-              await page.render({
+              const renderContext = {
                 canvasContext: context,
                 viewport: scaledViewport
-              }); // Modern pdf.js API: render returns a promise directly
+              };
+              const renderTask = page.render(renderContext);
+              await renderTask.promise; // pdf.js 2.14.305 uses renderTask.promise
               
               // Update page container width to allow horizontal scrolling
               pageContainer.style.width = `${container.offsetWidth}px`;
@@ -249,7 +251,7 @@
             }
           } catch (error) {
             console.error('Error rendering PDF:', error);
-            containerRef.current.innerHTML = '<p class="error-message">Не удалось загрузить PDF-файл. Проверьте наличие файлов или подключение.</p>';
+            containerRef.current.innerHTML = '<p class="error-message">Не удалось загрузить PDF-файл. Убедитесь, что файлы teoria.pdf и practika.pdf доступны.</p>';
           }
         };
 
@@ -503,7 +505,7 @@
                     <div></div>
                     <button className="button" onClick={handleBackspace}>⌫</button>
                   </div>
-                  <div className="grid grid-cols-4 gap-2">
+                  <div className="grid grid-cols-4 gap-2" style={{ marginTop: '-5px' }}>
                     {buttons.flat().map((btn) => (
                       <button
                         key={btn}
