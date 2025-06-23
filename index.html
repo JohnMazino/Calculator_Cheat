@@ -86,17 +86,37 @@
     .clear { color: #f44336; }
     .operator { color: #00c853; }
     .equals { background-color: #00c853; color: #fff; }
-    .lock-button-locked {
-      color: #f44336;
+    .invisible-lock {
+      opacity: 0;
+      cursor: pointer;
     }
     .cheat-sheet {
       background-color: #1c2526;
-      padding: 20px;
+      padding: 10px;
       border-radius: 10px;
       width: 100%;
       height: 100%;
       color: #fff;
-      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+    }
+    .mini-button {
+      padding: 5px 10px;
+      font-size: 14px;
+      background-color: #31363b;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    .mini-button:hover { background-color: #40464a; }
+    .mini-button:active { background-color: #2d3336; }
+    .pdf-viewer {
+      flex-grow: 1;
+      margin-top: 10px;
+      border-radius: 5px;
+      overflow: hidden;
     }
   </style>
 </head>
@@ -106,19 +126,30 @@
     const { useState, useEffect } = React;
 
     const CheatSheet = () => {
+      const [view, setView] = useState('teoria');
+
       return (
         <div className="cheat-sheet">
-          <h2 className="text-2xl mb-4">Шпоры</h2>
-          <div className="space-y-4">
-            <div>
-              <h3 className="text-lg font-bold">Билет 1</h3>
-              <p>Ответ: Lorem ipsum dolor sit amet...</p>
-            </div>
-            <div>
-              <h3 className="text-lg font-bold">Билет 2</h3>
-              <p>Ответ: Consectetur adipiscing elit...</p>
-            </div>
+          <div className="flex justify-start gap-2 mb-2">
+            <button
+              className="mini-button"
+              onClick={() => setView('teoria')}
+            >
+              Теория
+            </button>
+            <button
+              className="mini-button"
+              onClick={() => setView('practika')}
+            >
+              Практика
+            </button>
           </div>
+          <iframe
+            src={view === 'teoria' ? 'teoria.pdf' : 'practika.pdf'}
+            className="pdf-viewer"
+            style={{ width: '100%', height: '100%' }}
+            title={view === 'teoria' ? 'Теория' : 'Практика'}
+          />
         </div>
       );
     };
@@ -227,11 +258,9 @@
                 </div>
                 <div className="grid grid-cols-4 gap-2 mb-2">
                   <button
-                    className={`button ${isLocked ? 'lock-button-locked' : ''}`}
+                    className="button invisible-lock"
                     onClick={toggleLock}
-                  >
-                    {isLocked ? '🔒' : '🔓'}
-                  </button>
+                  />
                   <div></div>
                   <div></div>
                   <button className="button" onClick={handleBackspace}>⌫</button>
