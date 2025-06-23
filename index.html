@@ -8,8 +8,8 @@
   <script src="https://cdn.jsdelivr.net/npm/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.22.9/babel.min.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.7.76/pdf.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.7.76/pdf.worker.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@4.0.379/build/pdf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@4.0.379/build/pdf.worker.min.js"></script>
   <style>
     body {
       margin: 0;
@@ -44,7 +44,7 @@
       height: 100%;
       display: flex;
       flex-direction: column;
-      justify-content: space-between; /* Push content to top and bottom */
+      justify-content: space-between;
     }
     .display {
       background-color: #000;
@@ -149,6 +149,9 @@
       flex-direction: column;
       gap: 10px;
     }
+    .special-buttons {
+      margin-bottom: 5px; /* Slightly above main buttons */
+    }
   </style>
 </head>
 <body>
@@ -166,7 +169,7 @@
           const pdfjsLib = window.pdfjsLib;
           if (!pdfjsLib) {
             console.error('pdfjsLib is not loaded');
-            containerRef.current.innerHTML = '<p class="error-message">Ошибка загрузки PDF-библиотеки</p>';
+            containerRef.current.innerHTML = '<p class="error-message">Не удалось загрузить библиотеку PDF. Проверьте подключение к интернету или файлы.</p>';
             return;
           }
 
@@ -246,7 +249,7 @@
             }
           } catch (error) {
             console.error('Error rendering PDF:', error);
-            containerRef.current.innerHTML = '<p class="error-message">Ошибка загрузки PDF</p>';
+            containerRef.current.innerHTML = '<p class="error-message">Не удалось загрузить PDF-файл. Проверьте наличие файлов или подключение.</p>';
           }
         };
 
@@ -484,7 +487,9 @@
                     <div className="blinking-cursor">{calculation || '0'}</div>
                     <div className="text-lg text-gray-400">{previewResult}</div>
                   </div>
-                  <div className="grid grid-cols-4 gap-2 mb-2">
+                </div>
+                <div className="button-section">
+                  <div className="special-buttons grid grid-cols-4 gap-2">
                     <button
                       className="button function-button"
                       onClick={toggleFunctions}
@@ -498,8 +503,6 @@
                     <div></div>
                     <button className="button" onClick={handleBackspace}>⌫</button>
                   </div>
-                </div>
-                <div className="button-section">
                   <div className="grid grid-cols-4 gap-2">
                     {buttons.flat().map((btn) => (
                       <button
