@@ -96,6 +96,10 @@
       opacity: 0;
       cursor: pointer;
     }
+    .function-button {
+      background-color: #333;
+      color: #007bff;
+    }
     .cheat-sheet {
       background-color: #1c2526;
       padding: 10px;
@@ -138,6 +142,9 @@
       color: #ff4d4d;
       text-align: center;
       padding: 20px;
+    }
+    .button-grid {
+      margin-top: 20px; /* Lower buttons */
     }
   </style>
 </head>
@@ -190,7 +197,7 @@
               await page.render({
                 canvasContext: context,
                 viewport: scaledViewport
-              }).promise;
+              }).promise();
 
               // Update page container width to allow horizontal scrolling
               pageContainer.style.width = `${container.offsetWidth}px`;
@@ -245,7 +252,6 @@
 
       const handleTouchStart = (e) => {
         if (e.target.closest('.pdf-page')) {
-          // Allow touch events within pdf-page to handle scrolling
           return;
         }
         onSwipeStart(e);
@@ -259,11 +265,9 @@
           const clientWidth = pageContainer.clientWidth;
           const touchX = e.targetTouches[0].clientX;
 
-          // Prevent app-level swipe if scrolling within PDF and not at edges
           if (scrollLeft > 0 && scrollLeft < scrollWidth - clientWidth) {
             return;
           }
-          // Allow swipe only at edges
           if ((scrollLeft === 0 && touchX < touchStart) || (scrollLeft >= scrollWidth - clientWidth && touchX > touchStart)) {
             onSwipeMove(e);
           }
@@ -279,7 +283,6 @@
           const scrollWidth = pageContainer.scrollWidth;
           const clientWidth = pageContainer.clientWidth;
 
-          // Trigger app-level swipe only if at scroll edges
           if ((scrollLeft === 0 || scrollLeft >= scrollWidth - clientWidth) && touchStart && touchEnd) {
             onSwipeEnd(e);
           }
@@ -321,50 +324,100 @@
       const [currentPage, setCurrentPage] = useState(0);
       const [touchStart, setTouchStart] = useState(null);
       const [touchEnd, setTouchEnd] = useState(null);
+      const [showFunctions, setShowFunctions] = useState(false);
+      const [pendingFunction, setPendingFunction] = useState(null);
 
       useEffect(() => {
         localStorage.setItem('calculation', calculation);
         try {
-          const calcResult = eval(calculation.replace('×', '*').replace('÷', '/'));
-          if (!isNaN(calcResult) && isFinite(calcResult)) {
-            setPreviewResult(`= ${calcResult}`);
+          let evalExpression = calculation;
+          // Add closing parentheses for pending functions
+          if (pendingFunction) {
+            const openCount = (evalExpression.match(/\(/g) || []).length;
+            const closeCount = (evalExpression.match(/\)/g) || []).length;
+            evalExpression += ')'.repeat(openCount - closeCount);
+          }
+          const result = eval(evalExpression
+            .replace('×', '*')
+            .replace('÷', '/')
+            .replace('sin(', 'Math.sin(')
+            .replace('cos(', 'Math.cos(')
+            .replace('arctg(', 'Math.atan(')
+            .replace('√(', 'Math.sqrt('));
+          if (!isNaN(result) && isFinite(result)) {
+            setPreviewResult(`= ${result.toFixed(6)}`);
           } else {
             setPreviewResult('');
           }
         } catch {
           setPreviewResult('');
         }
-      }, [calculation]);
+      }, [calculation, pendingFunction]);
 
       const updateCalculation = (value) => {
-        if (calculation.length < 12) {
-          setCalculation(calculation + value);
+        if (calculation.length >= 20) return;
+
+        let newCalculation = calculation;
+        if (pendingFunction && ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '(', ','].includes(value)) {
+          newCalculation += value;
+          setPendingFunction(null); // Clear pending function after number/operator
+        } else if (['sin', 'cos', 'arctg', '√'].includes(value)) {
+          newCalculation += value + '(';
+          setPendingFunction(value);
+        } else {
+          newCalculation += value;
+          setPendingFunction(null);
         }
+        setCalculation(newCalculation);
       };
 
       const handleEquals = () => {
         try {
-          const calcResult = eval(calculation.replace('×', '*').replace('÷', '/'));
-          setCalculation(calcResult.toString());
+          let evalExpression = calculation;
+          // Add closing parentheses for pending functions
+          const openCount = (evalExpression.match(/\(/g) || []).length;
+          const closeCount = (evalExpression.match(/\)/g) || []).length;
+          evalExpression += ')'.repeat(openCount - closeCount);
+
+          const calcResult = eval(evalExpression
+            .replace('×', '*')
+            .replace('÷', '/')
+            .replace('sin(', 'Math.sin(')
+            .replace('cos(', 'Math.cos(')
+            .replace('arctg(', 'Math.atan(')
+            .replace('√(', 'Math.sqrt('));
+          setCalculation(calcResult.toFixed(6).toString());
           setPreviewResult('');
-          localStorage.setItem('calculation', calcResult.toString());
+          setPendingFunction(null);
+          localStorage.setItem('calculation', calcResult.toFixed(6).toString());
         } catch {
           setPreviewResult('Ошибка');
+          setPendingFunction(null);
         }
       };
 
       const handleBackspace = () => {
-        setCalculation(calculation.slice(0, -1));
+        const newCalculation = calculation.slice(0, -1);
+        setCalculation(newCalculation);
+        // Reset pending function if a function is being deleted
+        if (['sin', 'cos', 'arctg', '√'].some(fn => calculation.endsWith(fn + '('))) {
+          setPendingFunction(null);
+        }
       };
 
       const clearAll = () => {
         setCalculation('');
         setPreviewResult('');
+        setPendingFunction(null);
         localStorage.clear();
       };
 
       const toggleLock = () => {
         setIsLocked(!isLocked);
+      };
+
+      const toggleFunctions = () => {
+        setShowFunctions(!showFunctions);
       };
 
       const handleTouchStart = (e) => {
@@ -395,13 +448,23 @@
         setTouchEnd(null);
       };
 
-      const buttons = [
+      const standardButtons = [
         ['C', '()', '%', '÷'],
         ['7', '8', '9', '×'],
         ['4', '5', '6', '-'],
         ['1', '2', '3', '+'],
         ['±', '0', ',', '=']
       ];
+
+      const functionButtons = [
+        ['sin', 'cos', 'arctg', '√'],
+        ['7', '8', '9', '×'],
+        ['4', '5', '6', '-'],
+        ['1', '2', '3', '+'],
+        ['±', '0', ',', '=']
+      ];
+
+      const buttons = showFunctions ? functionButtons : standardButtons;
 
       return (
         <div
@@ -422,11 +485,16 @@
                     className="button invisible-lock"
                     onClick={toggleLock}
                   />
-                  <div></div>
+                  <button
+                    className="button function-button"
+                    onClick={toggleFunctions}
+                  >
+                    fn
+                  </button>
                   <div></div>
                   <button className="button" onClick={handleBackspace}>⌫</button>
                 </div>
-                <div className="grid grid-cols-4 gap-2">
+                <div className="button-grid grid grid-cols-4 gap-2">
                   {buttons.flat().map((btn) => (
                     <button
                       key={btn}
@@ -436,23 +504,25 @@
                         else if (btn === '%') {
                           try {
                             const newCalc = eval(calculation.replace('×', '*').replace('÷', '/')) / 100;
-                            setCalculation(newCalc.toString());
+                            setCalculation(newCalc.toFixed(6).toString());
                             setPreviewResult('');
+                            setPendingFunction(null);
                           } catch {
                             setPreviewResult('Ошибка');
                           }
                         } else if (btn === '±') {
                           try {
                             const newCalc = eval(calculation.replace('×', '*').replace('÷', '/')) * -1;
-                            setCalculation(newCalc.toString());
+                            setCalculation(newCalc.toFixed(6).toString());
                             setPreviewResult('');
+                            setPendingFunction(null);
                           } catch {
                             setPreviewResult('Ошибка');
                           }
                         } else if (btn === '=') handleEquals();
                         else updateCalculation(btn);
                       }}
-                      className={`button ${btn === 'C' ? 'clear' : ['÷', '×', '-', '+', '='].includes(btn) ? 'operator' : btn === '=' ? 'equals' : ''}`}
+                      className={`button ${btn === 'C' ? 'clear' : ['÷', '×', '-', '+', '=', 'sin', 'cos', 'arctg', '√'].includes(btn) ? 'operator' : btn === '=' ? 'equals' : ''}`}
                     >
                       {btn}
                     </button>
@@ -463,8 +533,8 @@
             <div className="swipe-page">
               <CheatSheet
                 onSwipeStart={handleTouchStart}
-                onSwipeMove={handleTouchMove}
-                onSwipeEnd={handleTouchEnd}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleTouchEnd}
               />
             </div>
           </div>
