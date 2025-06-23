@@ -3,11 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Калькулятор</title>
+  <title>Calculator</title>
   <script src="https://cdn.jsdelivr.net/npm/react@18.2.0/umd/react.production.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.22.9/babel.min.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js"></script>
   <style>
     body {
       margin: 0;
@@ -25,7 +27,7 @@
       display: flex;
       width: 200%;
       height: 100%;
-      transition: transform 0.2s ease;
+      transition: transform 0.2s ease-in-out;
     }
     .swipe-page {
       width: 50%;
@@ -37,7 +39,7 @@
     .calculator {
       background-color: #1c2526;
       padding: 10px;
-      border-radius: 10px;
+      border-radius: 8px;
       width: 100%;
       height: 100%;
       display: flex;
@@ -49,43 +51,47 @@
       text-align: right;
       border-radius: 5px;
       color: #fff;
-      font-size: 30px;
+      font-size: 28px;
       height: 80px;
       display: flex;
       flex-direction: column;
       align-items: flex-end;
       justify-content: space-between;
       position: relative;
+      margin-bottom: 10px;
     }
     .blinking-cursor::after {
-      content: "";
+      content: '';
       width: 2px;
       height: 40px;
-      background: #00c853;
+      background: #007bff;
       display: inline-block;
-      animation: cursor-blink 1s steps(2) infinite;
+      animation: cursor-blink 1s steps(1) infinite;
       position: absolute;
       right: 5px;
+      top: 50%;
+      transform: translateY(-50%);
     }
     @keyframes cursor-blink {
       0% { opacity: 0; }
+      50% { opacity: 1; }
     }
     .button {
       width: 100%;
       height: 70px;
       border-radius: 50%;
-      background-color: #31363b;
-      font-size: 28px;
+      background-color: #333;
+      font-size: 24px;
       border: 0;
       cursor: pointer;
       color: #fff;
       transition: background-color 0.2s;
     }
-    .button:hover { background-color: #40464a; }
-    .button:active { background-color: #2d3336; }
-    .clear { color: #f44336; }
-    .operator { color: #00c853; }
-    .equals { background-color: #00c853; color: #fff; }
+    .button:hover { background-color: #444; }
+    .button:active { background-color: #222; }
+    .clear { color: #ff4d4d; }
+    .operator { color: #007bff; }
+    .equals { background-color: #007bff; color: #fff; }
     .invisible-lock {
       opacity: 0;
       cursor: pointer;
@@ -93,43 +99,102 @@
     .cheat-sheet {
       background-color: #1c2526;
       padding: 10px;
-      border-radius: 10px;
+      border-radius: 8px;
       width: 100%;
       height: 100%;
       color: #fff;
       display: flex;
       flex-direction: column;
+      overflow-y: auto;
     }
     .mini-button {
       padding: 5px 10px;
       font-size: 14px;
-      background-color: #31363b;
+      background-color: #333;
       color: #fff;
       border: none;
       border-radius: 5px;
       cursor: pointer;
       transition: background-color 0.2s;
     }
-    .mini-button:hover { background-color: #40464a; }
-    .mini-button:active { background-color: #2d3336; }
-    .pdf-viewer {
+    .mini-button:hover { background-color: #444; }
+    .mini-button:active { background-color: #222; }
+    .pdf-container {
       flex-grow: 1;
+      overflow-y: auto;
       margin-top: 10px;
-      border-radius: 5px;
-      overflow: hidden;
+      touch-action: pan-y; /* Allows vertical scrolling while capturing horizontal swipes */
+    }
+    .pdf-canvas {
+      width: 100%;
+      border: none;
+      margin-bottom: 10px;
+    }
+    .error-message {
+      color: #ff4d4d;
+      text-align: center;
+      padding: 20px;
     }
   </style>
 </head>
 <body>
   <div id="root"></div>
   <script type="text/babel">
-    const { useState, useEffect } = React;
+    const { useState, useEffect, useRef } = React;
 
-    const CheatSheet = () => {
+    const CheatSheet = ({ onSwipeStart, onSwipeMove, onSwipeEnd }) => {
       const [view, setView] = useState('teoria');
+      const containerRef = useRef(null);
+
+      useEffect(() => {
+        const renderPDF = async () => {
+          const pdfjsLib = window.pdfjsLib;
+          if (!pdfjsLib) {
+            console.error('pdfjsLib is not loaded');
+            containerRef.current.innerHTML = '<p class="error-message">Ошибка загрузки PDF-библиотеки</p>';
+            return;
+          }
+
+          try {
+            const pdf = await pdfjsLib.getDocument(view === 'teoria' ? 'teoria.pdf' : 'practika.pdf').promise;
+            const container = containerRef.current;
+            container.innerHTML = ''; // Clear previous canvases
+
+            for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+              const page = await pdf.getPage(pageNum);
+              const viewport = page.getViewport({ scale: 1 });
+              const canvas = document.createElement('canvas');
+              canvas.className = 'pdf-canvas';
+              container.appendChild(canvas);
+
+              const context = canvas.getContext('2d');
+              const scale = Math.min(container.offsetWidth / viewport.width, 1);
+              const scaledViewport = page.getViewport({ scale });
+
+              canvas.width = scaledViewport.width;
+              canvas.height = scaledViewport.height;
+
+              await page.render({
+                canvasContext: context,
+                viewport: scaledViewport
+              }).promise;
+            }
+          } catch (error) {
+            console.error('Error rendering PDF:', error);
+            containerRef.current.innerHTML = '<p class="error-message">Ошибка загрузки PDF</p>';
+          }
+        };
+
+        renderPDF();
+      }, [view]);
 
       return (
-        <div className="cheat-sheet">
+        <div
+          className="cheat-sheet"
+          onTouchStart={onSwipeStart}
+          onTouchMove={onSwipeMove}
+          onTouchEnd={onSwipeEnd}
+        >
           <div className="flex justify-start gap-2 mb-2">
             <button
               className="mini-button"
@@ -144,12 +209,7 @@
               Практика
             </button>
           </div>
-          <iframe
-            src={view === 'teoria' ? 'teoria.pdf' : 'practika.pdf'}
-            className="pdf-viewer"
-            style={{ width: '100%', height: '100%' }}
-            title={view === 'teoria' ? 'Теория' : 'Практика'}
-          />
+          <div className="pdf-container" ref={containerRef}></div>
         </div>
       );
     };
@@ -216,6 +276,7 @@
       const handleTouchMove = (e) => {
         if (!isLocked) {
           setTouchEnd(e.targetTouches[0].clientX);
+          e.preventDefault(); // Prevent vertical scrolling during horizontal swipe
         }
       };
 
@@ -300,7 +361,11 @@
               </div>
             </div>
             <div className="swipe-page">
-              <CheatSheet />
+              <CheatSheet
+                onSwipeStart={handleTouchStart}
+                onSwipeMove={handleTouchMove}
+                onSwipeEnd={handleTouchEnd}
+              />
             </div>
           </div>
         </div>
