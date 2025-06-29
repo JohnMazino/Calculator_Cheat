@@ -147,13 +147,12 @@
       display: flex;
       flex-direction: column;
       gap: 8px;
-      padding-top: 20vh; /* Push buttons below the middle */
+      padding-top: 20vh;
     }
     .special-buttons {
-      margin-bottom: 8px; /* Slightly above main buttons */
+      margin-bottom: 8px;
     }
     .main-buttons {
-      /* No negative margin, rely on padding-top for positioning */
     }
   </style>
 </head>
@@ -195,7 +194,7 @@
               container.appendChild(pageContainer);
 
               const context = canvas.getContext('2d');
-              const baseScale = container.offsetWidth / viewport.width * 1.5; // Initial zoom 1.5x
+              const baseScale = container.offsetWidth / viewport.width * 1.5; // zoom 1.5x
               const scale = baseScale * window.devicePixelRatio; // High quality
               const scaledViewport = page.getViewport({ scale });
 
@@ -211,16 +210,15 @@
               const renderTask = page.render(renderContext);
               await renderTask.promise;
               
-              // Update page container width to allow horizontal scrolling
+              // horizontal scrolling
               pageContainer.style.width = `${container.offsetWidth}px`;
             };
 
-            // Lazy load: render first two pages initially
+            // render
             for (let pageNum = 1; pageNum <= Math.min(pdf.numPages, 2); pageNum++) {
               await renderPage(pageNum);
             }
 
-            // Intersection Observer for lazy loading additional pages
             const observer = new IntersectionObserver((entries) => {
               entries.forEach(async (entry) => {
                 if (entry.isIntersecting) {
@@ -351,7 +349,6 @@
         localStorage.setItem('calculation', calculation);
         try {
           let evalExpression = calculation;
-          // Add closing parentheses for pending functions
           if (pendingFunction) {
             const openCount = (evalExpression.match(/\(/g) || []).length;
             const closeCount = (evalExpression.match(/\)/g) || []).length;
@@ -380,7 +377,7 @@
         let newCalculation = calculation;
         if (pendingFunction && ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '(', ','].includes(value)) {
           newCalculation += value;
-          setPendingFunction(null); // Clear pending function after number/operator
+          setPendingFunction(null);
         } else if (['sin', 'cos', 'arctg', '√'].includes(value)) {
           newCalculation += value + '(';
           setPendingFunction(value);
@@ -394,7 +391,6 @@
       const handleEquals = () => {
         try {
           let evalExpression = calculation;
-          // Add closing parentheses for pending functions
           const openCount = (evalExpression.match(/\(/g) || []).length;
           const closeCount = (evalExpression.match(/\)/g) || []).length;
           evalExpression += ')'.repeat(openCount - closeCount);
@@ -419,7 +415,6 @@
       const handleBackspace = () => {
         const newCalculation = calculation.slice(0, -1);
         setCalculation(newCalculation);
-        // Reset pending function if a function is being deleted
         if (['sin', 'cos', 'arctg', '√'].some(fn => calculation.endsWith(fn + '('))) {
           setPendingFunction(null);
         }
